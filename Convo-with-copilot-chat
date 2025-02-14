@@ -1,0 +1,684 @@
+Git-out-ta-Here: have a read through my project and tell me how I can create it from the point I am at now. 
+
+Workspace: Enable Claude 3.5 Sonnet (Preview) for all clients
+Enable access to the latest Claude 3.5 Sonnet model from Anthropic. [Learn more about how GitHub Copilot serves Claude 3.5 Sonnet](https://docs.github.com/copilot/using-github-copilot/using-claude-sonnet-in-github-copilot).
+
+Git-out-ta-Here: @workspace Enable: "Enable Claude 3.5 Sonnet (Preview) for all clients"
+
+Workspace: Collecting workspace informationBased on your workspace, I'll help you create the GE-Prospector plugin from your current starting point. Here's a step-by-step development plan:
+
+1. **Update Plugin Configuration**
+First, modify `GEProspectorConfig.java` to include relevant settings:
+
+```java
+@ConfigGroup("geprospector")
+public interface GEProspectorConfig extends Config {
+    @ConfigItem(
+        keyName = "minimumProfit",
+        name = "Minimum Profit",
+        description = "Minimum profit margin to show an item"
+    )
+    default int minimumProfit() {
+        return 1000;
+    }
+
+    @ConfigItem(
+        keyName = "enableAlerts",
+        name = "Price Alerts",
+        description = "Enable notifications for price targets"
+    )
+    default boolean enableAlerts() {
+        return true;
+    }
+}
+```
+
+2. **Core Plugin Development**
+Update `GEProspectorPlugin.java`:
+
+```java
+@PluginDescriptor(
+    name = "GE-Prospector",
+    description = "Analyzes Grand Exchange data for profitable flipping opportunities",
+    tags = {"grand", "exchange", "flipping", "money", "making", "merching"}
+)
+public class GEProspectorPlugin extends Plugin {
+    // Add required services
+    @Inject
+    private Client client;
+
+    @Inject
+    private GEProspectorConfig config;
+
+    // Add panel components
+    private GEProspectorPanel panel;
+    private NavigationButton navButton;
+}
+```
+
+3. **Create Data Models**
+Create new classes for handling market data:
+
+```java
+// ItemData.java
+public class ItemData {
+    private final int itemId;
+    private final String name;
+    private final int buyPrice;
+    private final int sellPrice;
+    private final double profitMargin;
+    // Add getters/setters
+}
+
+// MarketTrend.java
+public class MarketTrend {
+    private final List<PricePoint> priceHistory;
+    private final double trendDirection;
+    // Add analysis methods
+}
+```
+
+4. **Implement API Integration**
+Create a service to interact with the OSRS GE API:
+
+```java
+// GEDataService.java
+public class GEDataService {
+    private static final String API_BASE_URL = 
+        "https://secure.runescape.com/m=itemdb_oldschool/api/catalogue/";
+
+    public ItemData fetchItemData(int itemId) {
+        // Implement API calls
+    }
+
+    public MarketTrend analyzeMarketTrend(int itemId) {
+        // Implement trend analysis
+    }
+}
+```
+
+5. **Create the UI**
+Add a custom panel for displaying data:
+
+```java
+// GEProspectorPanel.java
+public class GEProspectorPanel extends PluginPanel {
+    private final JPanel profitPanel;
+    private final JPanel alertPanel;
+    
+    public void updatePrices(List<ItemData> items) {
+        // Update UI with new price data
+    }
+}
+```
+
+6. **Development Steps**:
+
+- Set up project dependencies in build.gradle
+- Implement core GE data fetching functionality
+- Add price analysis algorithms
+- Create the UI components
+- Implement price alerts system
+- Add data caching for performance
+- Write tests for critical components
+
+7. **Testing**
+Enhance `GEProspectorPluginTest.java` with proper test cases:
+
+```java
+public class GEProspectorPluginTest {
+    @Test
+    public void testPriceAnalysis() {
+        // Add test cases
+    }
+
+    @Test
+    public void testDataFetching() {
+        // Add test cases
+    }
+}
+```
+
+8. **Documentation**
+Add detailed documentation in code and update the README with:
+- Setup instructions
+- Configuration options
+- Usage examples
+- API references
+- Contributing guidelines
+
+9. **Build & Deploy**
+Use Gradle to build the plugin:
+
+```sh
+./gradlew build
+```
+
+The plugin jar will be generated in `build/libs/`.
+
+Focus on implementing these components incrementally, starting with the core GE data fetching and basic UI, then adding more advanced features like trend analysis and alerts.
+
+Would you like me to elaborate on any of these steps or provide more specific implementation details for a particular component?
+
+Git-out-ta-Here: can you elaborate on the UI, how will it be made and will it use runelites theme? and their API, how will you access the API and also image files?
+
+GitHub Copilot: Let me break down the UI implementation and RuneLite integration specifics:
+
+1. **RuneLite UI Integration**
+
+```java
+public class GEProspectorPanel extends PluginPanel {
+    private static final ImageIcon ICON = new ImageIcon(ImageUtil.loadImageResource(
+        GEProspectorPlugin.class, "/panel_icon.png"));
+    
+    // Use RuneLite's color scheme
+    private static final Color BACKGROUND_COLOR = ColorScheme.DARKER_GRAY_COLOR;
+    private static final Color HOVER_COLOR = ColorScheme.DARKER_GRAY_HOVER_COLOR;
+
+    public GEProspectorPanel() {
+        super(false); // false = not scrollable
+        setLayout(new BorderLayout());
+        setBackground(BACKGROUND_COLOR);
+
+        // Add main components
+        JPanel headerPanel = buildHeader();
+        JPanel itemListPanel = buildItemList();
+        
+        add(headerPanel, BorderLayout.NORTH);
+        add(itemListPanel, BorderLayout.CENTER);
+    }
+}
+```
+
+2. **Custom Components Using RuneLite Style**
+
+```java
+public class ItemPanel extends JPanel {
+    private final JLabel itemIcon;
+    private final MaterialLabel itemName;
+    private final MaterialLabel profitLabel;
+
+    public ItemPanel() {
+        setLayout(new BorderLayout(5, 0));
+        setBorder(new EmptyBorder(5, 5, 5, 5));
+        
+        // Use RuneLite's custom components
+        itemIcon = new JLabel();
+        itemName = new MaterialLabel();
+        itemName.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+        
+        profitLabel = new MaterialLabel();
+        profitLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+    }
+}
+```
+
+3. **Accessing RuneLite's Item Images**
+
+```java
+public class ItemImageService {
+    @Inject
+    private ItemManager itemManager;
+
+    public BufferedImage getItemImage(int itemId) {
+        return itemManager.getImage(itemId);
+    }
+
+    public AsyncBufferedImage getItemImageAsync(int itemId) {
+        return itemManager.getImage(itemId, 1, false);
+    }
+}
+```
+
+4. **Grand Exchange API Integration**
+
+```java
+public class GrandExchangeApi {
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final String OSRS_GE_API = "https://prices.runescape.wiki/api/v1/osrs";
+    
+    public CompletableFuture<JsonObject> getLatestPrices() {
+        return client.sendAsync(
+            HttpRequest.newBuilder()
+                .uri(URI.create(OSRS_GE_API + "/latest"))
+                .header("User-Agent", "GE-Prospector RuneLite Plugin")
+                .build(),
+            HttpResponse.BodyHandlers.ofString())
+            .thenApply(response -> JsonParser.parseString(response.body())
+                                           .getAsJsonObject());
+    }
+}
+```
+
+5. **Resource Management**
+
+```plaintext
+resources/
+├── com/geprospector/
+│   ├── icons/
+│   │   ├── panel_icon.png
+│   │   ├── profit_up.png
+│   │   └── profit_down.png
+│   └── ui/
+│       └── styles.properties
+```
+
+6. **Plugin Icon Integration**
+
+```java
+@Override
+protected void startUp() {
+    panel = injector.getInstance(GEProspectorPanel.class);
+    
+    final BufferedImage icon = ImageUtil.loadImageResource(
+        getClass(), "/icons/panel_icon.png");
+
+    navButton = NavigationButton.builder()
+        .tooltip("GE Prospector")
+        .icon(icon)
+        .priority(5)
+        .panel(panel)
+        .build();
+
+    clientToolbar.addNavigation(navButton);
+}
+```
+
+7. **Theme Properties**
+
+```properties
+panel.background=#2B2B2B
+panel.foreground=#C7C7C7
+item.hover.background=#3B3B3B
+profit.positive=#00FF00
+profit.negative=#FF0000
+```
+
+Key points about RuneLite integration:
+- Use `ImageUtil` to load resources from the plugin's JAR
+- Follow RuneLite's color scheme using `ColorScheme` constants
+- Use RuneLite's `MaterialLabel` and other custom components
+- Implement `PluginPanel` for consistent sidebar styling
+- Access item images through RuneLite's `ItemManager`
+- Use RuneLite's built-in caching for performance
+- Follow RuneLite's UI guidelines for consistent look and feel
+
+Would you like me to provide more details about any specific aspect of the UI or API integration?
+
+Git-out-ta-Here: explain to me how a user would use the plug in while playing, walk me through it as if they are using it
+
+GitHub Copilot: Here's a walkthrough of how a player would use the GE-Prospector plugin while playing OSRS:
+
+1. **Initial Setup**
+- Player opens RuneLite
+- Goes to Plugin Hub and installs GE-Prospector
+- Enables the plugin in RuneLite settings
+- A new icon appears in the right sidebar
+
+2. **Basic Usage**
+```markdown
+1. Click the GE-Prospector icon on the sidebar
+- Shows a panel with current profitable items
+- Each item displays:
+  * Item icon
+  * Current buy/sell price
+  * Potential profit margin
+  * Price trend indicator (↑ or ↓)
+```
+
+3. **At the Grand Exchange**
+```markdown
+- Player stands at the GE
+- Panel automatically highlights items currently trending well
+- Green indicators show items with rising profits
+- Red indicators show items with declining profits
+- Mouse hover shows detailed information:
+  * Price history graph
+  * Success rate for flips
+  * Recommended buy/sell prices
+```
+
+4. **Making a Flip**
+```markdown
+1. Player sees a profitable item (e.g., Dragon bones)
+2. Panel shows:
+   * Buy price: 2,500gp
+   * Sell price: 2,700gp
+   * Profit per item: 200gp
+   * Volume: High
+3. Player places buy offer at suggested price
+4. Plugin tracks the purchase in a "Current Flips" section
+5. Once bought, plugin suggests optimal sell price
+```
+
+5. **Price Alerts**
+```markdown
+- Player can set price targets for items
+- Notification appears when:
+  * Item hits target price
+  * Sudden price movements occur
+  * Unusual trading volume detected
+- Customizable alert sounds and chat messages
+```
+
+6. **Real-time Updates**
+```markdown
+The panel continuously updates showing:
+- Current active flips
+- Profit/loss tracking
+- Market trends
+- Total profit made today
+```
+
+7. **Advanced Features**
+```markdown
+- Risk indicator for each flip
+- Historical success rate
+- Best time to buy/sell
+- Competition level for each item
+- Market volatility warnings
+```
+
+8. **Quick Actions**
+```markdown
+Right-click options on items in panel:
+- "Copy buy price"
+- "Copy sell price"
+- "Add to watchlist"
+- "Set price alert"
+- "View trade history"
+```
+
+This creates a seamless workflow where players can:
+- Identify profitable items quickly
+- Make informed trading decisions
+- Track their flips in real-time
+- Maximize their Grand Exchange profits
+- Learn market patterns over time
+
+The plugin essentially acts as a trading assistant, helping players make smarter and more profitable flips while reducing the risk of losses.
+
+Git-out-ta-Here: that sounds great, would it also be possible to have a estimated time it will take for the item to be flipped by the user, this could help them choose which items they want to flip 
+
+GitHub Copilot: Yes, adding flip time estimation would be a valuable feature! Here's how we could implement it:
+
+1. **First, add the time estimation model:**
+
+```java
+public class FlipTimeEstimate {
+    private final int itemId;
+    private final int estimatedMinutes;
+    private final double confidence;
+    private final TradingVolume volume;
+    
+    public enum TradingVolume {
+        VERY_HIGH("< 5 mins", "🟢"),
+        HIGH("5-15 mins", "🟡"),
+        MEDIUM("15-30 mins", "🟠"),
+        LOW("30-60 mins", "🔴"),
+        VERY_LOW("> 1 hour", "⚫");
+        
+        private final String timeRange;
+        private final String indicator;
+        // ... constructors and getters
+    }
+}
+```
+
+2. **Add time estimation to the item panel:**
+
+```java
+public class ItemPanel extends JPanel {
+    private final JLabel timeEstimate;
+    
+    private void updateTimeEstimate(FlipTimeEstimate estimate) {
+        timeEstimate.setText(String.format("%s %s", 
+            estimate.getVolume().getIndicator(),
+            estimate.getVolume().getTimeRange()
+        ));
+        
+        // Add tooltip with detailed info
+        String tooltip = String.format(
+            "<html>Estimated flip time: %s<br>" +
+            "Trading volume: %s<br>" +
+            "Confidence: %.0f%%</html>",
+            estimate.getVolume().getTimeRange(),
+            estimate.getVolume(),
+            estimate.getConfidence() * 100
+        );
+        timeEstimate.setToolTipText(tooltip);
+    }
+}
+```
+
+3. **Add calculation service:**
+
+```java
+public class FlipTimeService {
+    @Inject
+    private GrandExchangeApi geApi;
+    
+    public FlipTimeEstimate calculateFlipTime(int itemId) {
+        // Get trading volume data
+        int hourlyVolume = geApi.getHourlyTradeVolume(itemId);
+        int activeListings = geApi.getActiveListings(itemId);
+        
+        // Calculate estimated time based on:
+        // - Current trading volume
+        // - Number of active buy/sell listings
+        // - Time of day (peak hours vs off-peak)
+        // - Historical flip completion times
+        
+        TradingVolume volume = calculateVolumeCategory(hourlyVolume, activeListings);
+        double confidence = calculateConfidence(hourlyVolume, activeListings);
+        
+        return new FlipTimeEstimate(itemId, 
+                                  estimateMinutes(volume), 
+                                  confidence, 
+                                  volume);
+    }
+}
+```
+
+4. **Add to the main UI display:**
+
+```java
+public class GEProspectorPanel extends PluginPanel {
+    private void addItemToList(ItemData item) {
+        ItemPanel itemPanel = new ItemPanel(item);
+        
+        // Add sorting options
+        JComboBox<String> sortBox = new JComboBox<>(new String[]{
+            "Sort by Profit",
+            "Sort by Time",
+            "Sort by Profit/Hour"
+        });
+        
+        // Calculate profit per hour
+        FlipTimeEstimate timeEst = flipTimeService.calculateFlipTime(item.getId());
+        double profitPerHour = calculateProfitPerHour(item, timeEst);
+        
+        // Display profit/hour
+        String profitText = String.format(
+            "<html>Profit: %dgp<br>" +
+            "Est. time: %s<br>" +
+            "Profit/hr: %dgp</html>",
+            item.getProfit(),
+            timeEst.getVolume().getTimeRange(),
+            (int)profitPerHour
+        );
+    }
+}
+```
+
+This implementation would:
+- Show a quick visual indicator (🟢🟡🟠🔴⚫) of flip speed
+- Display estimated time ranges
+- Calculate and show profit per hour
+- Allow sorting by flip time or profit/hour
+- Show confidence levels in the estimates
+- Account for time of day and market conditions
+- Learn from historical flip completion times
+
+The estimates would be based on:
+- Current trading volume
+- Number of active listings
+- Historical transaction data
+- Time of day patterns
+- Market competition
+- Item category patterns
+
+This helps players make informed decisions by balancing potential profit against time investment!
+
+Git-out-ta-Here: if you were to hire a developer to create this plug in starting from the point it is at right now, how would you instruct them to and can you give them a detailed roadmap with phases to be completed in an efficient, logical way
+
+GitHub Copilot: # GE-Prospector Development Roadmap
+
+## Phase 1: Project Setup & Core Infrastructure (Week 1)
+```markdown
+1. Environment Setup
+   - Configure RuneLite development environment
+   - Set up Gradle project structure
+   - Create initial plugin class structure
+   - Set up Git repository with proper .gitignore
+
+2. Basic Plugin Integration
+   - Implement plugin descriptor
+   - Create config interface
+   - Add sidebar icon and panel
+   - Test basic RuneLite integration
+```
+
+## Phase 2: Data Layer & API Integration (Week 2)
+```markdown
+1. API Integration
+   - Implement GrandExchangeApi class
+   - Create data models (ItemData, MarketTrend)
+   - Set up caching system
+   - Add error handling
+
+2. Price Analysis
+   - Implement price tracking
+   - Create historical data storage
+   - Add basic trend analysis
+   - Test API reliability
+```
+
+## Phase 3: Core UI Development (Week 2-3)
+```markdown
+1. Basic UI Components
+   - Create main panel layout
+   - Implement item list view
+   - Add basic sorting functionality
+   - Integrate RuneLite theme
+
+2. Item Display
+   - Add item icons
+   - Implement price display
+   - Create profit calculations
+   - Add basic tooltips
+```
+
+## Phase 4: Trading Features (Week 3-4)
+```markdown
+1. Flip Tracking
+   - Implement flip detection
+   - Add profit tracking
+   - Create transaction history
+   - Implement time estimation system
+
+2. Trading Analysis
+   - Add volume tracking
+   - Implement profit/hour calculations
+   - Create risk assessment
+   - Add market competition analysis
+```
+
+## Phase 5: Advanced Features (Week 4-5)
+```markdown
+1. Alert System
+   - Implement price alerts
+   - Add notification system
+   - Create custom alert conditions
+   - Add alert management UI
+
+2. Advanced Analytics
+   - Add detailed trend analysis
+   - Implement pattern recognition
+   - Create prediction models
+   - Add market timing features
+```
+
+## Phase 6: Polish & Optimization (Week 5-6)
+```markdown
+1. Performance
+   - Optimize data fetching
+   - Implement efficient caching
+   - Reduce memory usage
+   - Profile and optimize UI
+
+2. User Experience
+   - Add keyboard shortcuts
+   - Implement drag-and-drop
+   - Add context menus
+   - Polish UI animations
+```
+
+## Phase 7: Testing & Documentation (Week 6)
+```markdown
+1. Testing
+   - Unit tests for core functionality
+   - Integration tests
+   - Performance testing
+   - User testing
+
+2. Documentation
+   - Code documentation
+   - User guide
+   - API documentation
+   - Installation guide
+```
+
+## Technical Guidelines
+```markdown
+1. Code Structure
+   - Follow RuneLite coding standards
+   - Use dependency injection
+   - Implement proper error handling
+   - Add logging system
+
+2. Version Control
+   - Create feature branches
+   - Write clear commit messages
+   - Regular pull requests
+   - Code review process
+
+3. Testing Requirements
+   - 80% code coverage minimum
+   - Integration tests for API
+   - UI component tests
+   - Performance benchmarks
+```
+
+## Deliverables for Each Phase
+```markdown
+1. Source Code
+   - Documented code
+   - Unit tests
+   - Integration tests
+   - Build scripts
+
+2. Documentation
+   - Technical documentation
+   - API documentation
+   - User documentation
+   - Release notes
+
+3. Testing Reports
+   - Test coverage reports
+   - Performance metrics
+   - Bug reports
+   - User feedback
+```
+
+This roadmap assumes a single developer working full-time. Each phase should have regular check-ins and code reviews. The developer should focus on getting core functionality working first, then add advanced features incrementally.

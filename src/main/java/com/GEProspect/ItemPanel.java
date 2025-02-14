@@ -27,8 +27,15 @@ public class ItemPanel extends JPanel {
     private final PriceChartPanel chartPanel;
     private final CardLayout cardLayout;
     private final JPanel contentPanel;
+    private final MarketDataService marketService;
+    private final ItemPrice item;
+    private final EstimatedTime timeEst;
     
-    public ItemPanel(ItemPrice item, EstimatedTime timeEst) {
+    public ItemPanel(ItemPrice item, EstimatedTime timeEst, MarketDataService marketService) {
+        this.item = item;
+        this.timeEst = timeEst;
+        this.marketService = marketService;
+        
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
@@ -91,12 +98,19 @@ public class ItemPanel extends JPanel {
         // Update with item data
         updateDisplay(item, timeEst);
         
-        // Add click handler for switching views
-        addMouseListener(new MouseAdapter() {
+        // Add mouse listeners for interactions
+        MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
                     toggleView();
+                }
+            }
+            
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    showContextMenu(e);
                 }
             }
             
@@ -109,7 +123,10 @@ public class ItemPanel extends JPanel {
             public void mouseExited(MouseEvent e) {
                 container.setBackground(ColorScheme.DARKER_GRAY_COLOR);
             }
-        });
+        };
+        
+        addMouseListener(mouseAdapter);
+        container.addMouseListener(mouseAdapter);
     }
     
     private void toggleView() {
@@ -119,6 +136,11 @@ public class ItemPanel extends JPanel {
         } else {
             cl.show(contentPanel, "summary");
         }
+    }
+    
+    private void showContextMenu(MouseEvent e) {
+        ItemContextMenu menu = new ItemContextMenu(item, timeEst, marketService);
+        menu.show(e.getComponent(), e.getX(), e.getY());
     }
     
     public void updateDisplay(ItemPrice item, EstimatedTime timeEst) {
@@ -168,7 +190,8 @@ public class ItemPanel extends JPanel {
     // Additional constructor for active flips
     public ItemPanel(FlipEntry flip, MarketDataService marketService) {
         this(marketService.getPrice(flip.getItemId()), 
-             new EstimatedTime((int)(flip.getDuration() / 60000), 1.0));
+             new EstimatedTime((int)(flip.getDuration() / 60000), 1.0),
+             marketService);
         
         // Update profit display for active flips
         if (flip.isFlipComplete()) {
@@ -177,5 +200,14 @@ public class ItemPanel extends JPanel {
             ));
             profitLabel.setForeground(getProfitColor(flip.getProfit()));
         }
+    }
+
+    // Add getter methods for sorting
+    public ItemPrice getItemPrice() {
+        return item;
+    }
+    
+    public EstimatedTime getTimeEstimate() {
+        return timeEst;
     }
 }
