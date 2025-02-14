@@ -30,6 +30,9 @@ dependencies {
     // Guava for caching
     implementation 'com.google.guava:guava:31.1-jre'
     
+    // Charts
+    implementation 'org.jfree:jfreechart:1.5.4'
+    
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
     testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion

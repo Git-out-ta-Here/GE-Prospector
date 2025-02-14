@@ -24,11 +24,20 @@ public class ItemPanel extends JPanel {
     private final JLabel priceLabel;
     private final JLabel timeLabel;
     private final JLabel profitLabel;
+    private final PriceChartPanel chartPanel;
+    private final CardLayout cardLayout;
+    private final JPanel contentPanel;
     
     public ItemPanel(ItemPrice item, EstimatedTime timeEst) {
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
+        // Create card layout for switching between summary and chart views
+        cardLayout = new CardLayout();
+        contentPanel = new JPanel(cardLayout);
+        contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        // Create main container for summary view
         container = new JPanel();
         container.setLayout(new BorderLayout());
         container.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -69,13 +78,28 @@ public class ItemPanel extends JPanel {
         container.add(leftSide, BorderLayout.WEST);
         container.add(rightSide, BorderLayout.EAST);
         
-        add(container, BorderLayout.CENTER);
+        // Create chart panel
+        chartPanel = new PriceChartPanel();
+        chartPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        
+        // Add both views to card layout
+        contentPanel.add(container, "summary");
+        contentPanel.add(chartPanel, "chart");
+        
+        add(contentPanel, BorderLayout.CENTER);
         
         // Update with item data
         updateDisplay(item, timeEst);
         
-        // Add hover effect
+        // Add click handler for switching views
         addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    toggleView();
+                }
+            }
+            
             @Override
             public void mouseEntered(MouseEvent e) {
                 container.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
@@ -86,6 +110,15 @@ public class ItemPanel extends JPanel {
                 container.setBackground(ColorScheme.DARKER_GRAY_COLOR);
             }
         });
+    }
+    
+    private void toggleView() {
+        CardLayout cl = (CardLayout) contentPanel.getLayout();
+        if (contentPanel.getComponent(0).isVisible()) {
+            cl.show(contentPanel, "chart");
+        } else {
+            cl.show(contentPanel, "summary");
+        }
     }
     
     public void updateDisplay(ItemPrice item, EstimatedTime timeEst) {
@@ -105,13 +138,17 @@ public class ItemPanel extends JPanel {
         );
         profitLabel.setText(profitText);
         
+        // Update chart data
+        chartPanel.addPrice(item.getLowPrice(), item.getHighPrice());
+        
         // Tooltip with detailed information
         String tooltip = String.format("<html>" +
             "Buy Price: %s gp<br>" +
             "Sell Price: %s gp<br>" +
             "Profit: %s gp<br>" +
             "Est. Time: %s<br>" +
-            "Confidence: %.0f%%</html>",
+            "Confidence: %.0f%%<br>" +
+            "Double-click to view chart</html>",
             GP_FORMAT.format(item.getLowPrice()),
             GP_FORMAT.format(item.getHighPrice()),
             GP_FORMAT.format(item.getProfitMargin()),
