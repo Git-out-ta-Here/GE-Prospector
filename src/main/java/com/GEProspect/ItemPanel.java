@@ -1,7 +1,6 @@
 package com.GEProspect;
 
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.components.MaterialLabel;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
@@ -21,10 +20,10 @@ public class ItemPanel extends JPanel {
     
     private final JPanel container;
     private final JLabel iconLabel;
-    private final MaterialLabel nameLabel;
-    private final MaterialLabel priceLabel;
-    private final MaterialLabel timeLabel;
-    private final MaterialLabel profitLabel;
+    private final JLabel nameLabel;
+    private final JLabel priceLabel;
+    private final JLabel timeLabel;
+    private final JLabel profitLabel;
     
     public ItemPanel(ItemPrice item, EstimatedTime timeEst) {
         setLayout(new BorderLayout());
@@ -45,7 +44,7 @@ public class ItemPanel extends JPanel {
         iconLabel = new JLabel();
         iconLabel.setPreferredSize(ICON_SIZE);
         
-        nameLabel = new MaterialLabel();
+        nameLabel = new JLabel();
         nameLabel.setForeground(Color.WHITE);
         
         leftSide.add(iconLabel, BorderLayout.WEST);
@@ -55,13 +54,13 @@ public class ItemPanel extends JPanel {
         JPanel rightSide = new JPanel(new GridLayout(2, 1, 0, 2));
         rightSide.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
-        priceLabel = new MaterialLabel();
+        priceLabel = new JLabel();
         priceLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
         
-        timeLabel = new MaterialLabel();
+        timeLabel = new JLabel();
         timeLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
         
-        profitLabel = new MaterialLabel();
+        profitLabel = new JLabel();
         profitLabel.setForeground(getProfitColor(item.getProfitMargin()));
         
         rightSide.add(priceLabel);
@@ -125,7 +124,7 @@ public class ItemPanel extends JPanel {
     private Color getProfitColor(int profit) {
         if (profit > 100000) return ColorScheme.PROGRESS_COMPLETE_COLOR;
         if (profit > 50000) return ColorScheme.PROGRESS_INPROGRESS_COLOR;
-        if (profit > 10000) return ColorScheme.YELLOW;
+        if (profit > 10000) return ColorScheme.GRAND_EXCHANGE_ALCH;
         return ColorScheme.LIGHT_GRAY_COLOR;
     }
     

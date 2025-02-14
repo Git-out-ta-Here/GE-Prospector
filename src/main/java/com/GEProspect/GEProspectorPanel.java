@@ -54,7 +54,6 @@ public class GEProspectorPanel extends PluginPanel {
         // Title
         JLabel title = new JLabel("GE Prospector");
         title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-        title.setFont(FontManager.getRunescapeBoldFont());
         
         header.add(title, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
