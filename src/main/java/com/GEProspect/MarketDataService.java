@@ -2,6 +2,7 @@ package com.GEProspect;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -14,6 +15,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 @Slf4j
 @Singleton
@@ -61,8 +64,7 @@ public class MarketDataService {
                 }
 
                 String responseBody = response.body().string();
-                JsonObject data = gson.fromJson(responseBody, JsonObject.class)
-                    .getAsJsonObject("data");
+                JsonObject data = JsonParser.parseString(responseBody).getAsJsonObject().getAsJsonObject("data");
                 
                 updatePriceCache(data);
             }
@@ -93,6 +95,10 @@ public class MarketDataService {
 
     public ItemPrice getPrice(int itemId) {
         return priceCache.get(itemId);
+    }
+
+    public List<ItemPrice> getAllPrices() {
+        return new ArrayList<>(priceCache.values());
     }
 
     public void shutdown() {

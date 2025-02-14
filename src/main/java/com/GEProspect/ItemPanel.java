@@ -1,213 +1,150 @@
 package com.GEProspect;
 
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.QuantityFormatter;
-
+import net.runelite.client.ui.FontManager;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.text.NumberFormat;
-import java.util.Locale;
+import java.awt.event.*;
 
 public class ItemPanel extends JPanel {
-    private static final Dimension ICON_SIZE = new Dimension(32, 32);
-    private static final NumberFormat GP_FORMAT = NumberFormat.getNumberInstance(Locale.US);
-    
-    private final JPanel container;
-    private final JLabel iconLabel;
-    private final JLabel nameLabel;
-    private final JLabel priceLabel;
-    private final JLabel timeLabel;
-    private final JLabel profitLabel;
-    private final PriceChartPanel chartPanel;
-    private final CardLayout cardLayout;
-    private final JPanel contentPanel;
-    private final MarketDataService marketService;
-    private final ItemPrice item;
+    private final ItemPrice itemPrice;
     private final EstimatedTime timeEst;
-    
-    public ItemPanel(ItemPrice item, EstimatedTime timeEst, MarketDataService marketService) {
-        this.item = item;
+    private final MarketDataService marketDataService;
+    private JLabel alertLabel;
+    private Integer targetPrice;
+    private boolean alertOnAbove;
+
+    public ItemPanel(ItemPrice itemPrice, EstimatedTime timeEst, MarketDataService marketDataService) {
+        this.itemPrice = itemPrice;
         this.timeEst = timeEst;
-        this.marketService = marketService;
+        this.marketDataService = marketDataService;
         
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        // Create card layout for switching between summary and chart views
-        cardLayout = new CardLayout();
-        contentPanel = new JPanel(cardLayout);
-        contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        // Create main container for summary view
-        container = new JPanel();
-        container.setLayout(new BorderLayout());
-        container.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        container.setBorder(new CompoundBorder(
-            new MatteBorder(0, 0, 1, 0, ColorScheme.MEDIUM_GRAY_COLOR),
-            new EmptyBorder(5, 5, 5, 5)
+        setBorder(new CompoundBorder(
+            new EmptyBorder(5, 5, 5, 5),
+            new LineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR)
         ));
-        
-        // Left side with icon and name
-        JPanel leftSide = new JPanel(new BorderLayout(5, 0));
-        leftSide.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        iconLabel = new JLabel();
-        iconLabel.setPreferredSize(ICON_SIZE);
-        
-        nameLabel = new JLabel();
-        nameLabel.setForeground(Color.WHITE);
-        
-        leftSide.add(iconLabel, BorderLayout.WEST);
-        leftSide.add(nameLabel, BorderLayout.CENTER);
-        
-        // Right side with price and time info
-        JPanel rightSide = new JPanel(new GridLayout(2, 1, 0, 2));
-        rightSide.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        priceLabel = new JLabel();
-        priceLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-        
-        timeLabel = new JLabel();
-        timeLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-        
-        profitLabel = new JLabel();
-        profitLabel.setForeground(getProfitColor(item.getProfitMargin()));
-        
-        rightSide.add(priceLabel);
-        rightSide.add(timeLabel);
-        
-        container.add(leftSide, BorderLayout.WEST);
-        container.add(rightSide, BorderLayout.EAST);
-        
-        // Create chart panel
-        chartPanel = new PriceChartPanel();
-        chartPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        // Add both views to card layout
-        contentPanel.add(container, "summary");
-        contentPanel.add(chartPanel, "chart");
-        
-        add(contentPanel, BorderLayout.CENTER);
-        
-        // Update with item data
-        updateDisplay(item, timeEst);
-        
-        // Add mouse listeners for interactions
-        MouseAdapter mouseAdapter = new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
-                    toggleView();
-                }
-            }
-            
+
+        setupComponents();
+        addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     showContextMenu(e);
                 }
             }
-            
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                container.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                container.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-            }
-        };
-        
-        addMouseListener(mouseAdapter);
-        container.addMouseListener(mouseAdapter);
+        });
     }
-    
-    private void toggleView() {
-        CardLayout cl = (CardLayout) contentPanel.getLayout();
-        if (contentPanel.getComponent(0).isVisible()) {
-            cl.show(contentPanel, "chart");
-        } else {
-            cl.show(contentPanel, "summary");
-        }
+
+    private void setupComponents() {
+        // Main info panel (left side)
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        infoPanel.setOpaque(false);
+
+        // Item name
+        JLabel nameLabel = new JLabel(itemPrice.getName());
+        nameLabel.setForeground(Color.WHITE);
+        nameLabel.setFont(FontManager.getRunescapeSmallFont());
+        infoPanel.add(nameLabel);
+
+        // Profit info
+        JLabel profitLabel = new JLabel(String.format("%,d gp", itemPrice.getProfitMargin()));
+        profitLabel.setForeground(getProfitColor(itemPrice.getProfitMargin()));
+        profitLabel.setFont(FontManager.getRunescapeSmallFont());
+        infoPanel.add(profitLabel);
+
+        // Price panel (center)
+        JPanel pricePanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        pricePanel.setOpaque(false);
+
+        // Buy price
+        JLabel buyLabel = new JLabel(String.format("Buy: %,d", itemPrice.getLowPrice()));
+        buyLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+        buyLabel.setFont(FontManager.getRunescapeSmallFont());
+        pricePanel.add(buyLabel);
+
+        // Sell price
+        JLabel sellLabel = new JLabel(String.format("Sell: %,d", itemPrice.getHighPrice()));
+        sellLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+        sellLabel.setFont(FontManager.getRunescapeSmallFont());
+        pricePanel.add(sellLabel);
+
+        // Time estimate panel (right side)
+        JPanel timePanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        timePanel.setOpaque(false);
+
+        // Volume indicator
+        JLabel volumeLabel = new JLabel(timeEst.getVolumeCategory().getIcon());
+        volumeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        timePanel.add(volumeLabel);
+
+        // Time estimate
+        JLabel timeLabel = new JLabel(String.format("%d min", timeEst.getMinutesToComplete()));
+        timeLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+        timeLabel.setFont(FontManager.getRunescapeSmallFont());
+        timeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        timePanel.add(timeLabel);
+
+        // Add alert label if there's a price target
+        alertLabel = new JLabel();
+        alertLabel.setForeground(ColorScheme.PROGRESS_ERROR_COLOR);
+        alertLabel.setFont(FontManager.getRunescapeSmallFont());
+        alertLabel.setVisible(false);
+        
+        // Layout
+        add(infoPanel, BorderLayout.WEST);
+        add(pricePanel, BorderLayout.CENTER);
+        add(timePanel, BorderLayout.EAST);
+        add(alertLabel, BorderLayout.SOUTH);
     }
-    
-    private void showContextMenu(MouseEvent e) {
-        ItemContextMenu menu = new ItemContextMenu(item, timeEst, marketService);
-        menu.show(e.getComponent(), e.getX(), e.getY());
-    }
-    
-    public void updateDisplay(ItemPrice item, EstimatedTime timeEst) {
-        nameLabel.setText(item.getItemId() + "");  // TODO: Get item name from ItemManager
-        
-        String priceText = String.format("%s gp", GP_FORMAT.format(item.getHighPrice()));
-        priceLabel.setText(priceText);
-        
-        String timeText = String.format("%s %s", 
-            timeEst.getCategory().getIndicator(),
-            timeEst.getCategory().getTimeRange()
-        );
-        timeLabel.setText(timeText);
-        
-        String profitText = String.format("%s gp", 
-            GP_FORMAT.format(item.getProfitMargin())
-        );
-        profitLabel.setText(profitText);
-        
-        // Update chart data
-        chartPanel.addPrice(item.getLowPrice(), item.getHighPrice());
-        
-        // Tooltip with detailed information
-        String tooltip = String.format("<html>" +
-            "Buy Price: %s gp<br>" +
-            "Sell Price: %s gp<br>" +
-            "Profit: %s gp<br>" +
-            "Est. Time: %s<br>" +
-            "Confidence: %.0f%%<br>" +
-            "Double-click to view chart</html>",
-            GP_FORMAT.format(item.getLowPrice()),
-            GP_FORMAT.format(item.getHighPrice()),
-            GP_FORMAT.format(item.getProfitMargin()),
-            timeEst.getCategory().getTimeRange(),
-            timeEst.getConfidence() * 100
-        );
-        setToolTipText(tooltip);
-    }
-    
+
     private Color getProfitColor(int profit) {
-        if (profit > 100000) return ColorScheme.PROGRESS_COMPLETE_COLOR;
-        if (profit > 50000) return ColorScheme.PROGRESS_INPROGRESS_COLOR;
-        if (profit > 10000) return ColorScheme.GRAND_EXCHANGE_ALCH;
-        return ColorScheme.LIGHT_GRAY_COLOR;
+        if (profit > 10000) return ColorScheme.PROGRESS_COMPLETE_COLOR;
+        if (profit > 5000) return ColorScheme.PROGRESS_INPROGRESS_COLOR;
+        if (profit > 0) return ColorScheme.LIGHT_GRAY_COLOR;
+        return ColorScheme.PROGRESS_ERROR_COLOR;
     }
-    
-    // Additional constructor for active flips
-    public ItemPanel(FlipEntry flip, MarketDataService marketService) {
-        this(marketService.getPrice(flip.getItemId()), 
-             new EstimatedTime((int)(flip.getDuration() / 60000), 1.0),
-             marketService);
-        
-        // Update profit display for active flips
-        if (flip.isFlipComplete()) {
-            profitLabel.setText(String.format("%s gp", 
-                GP_FORMAT.format(flip.getProfit())
-            ));
-            profitLabel.setForeground(getProfitColor(flip.getProfit()));
+
+    public void addPriceAlert(int price, boolean above) {
+        this.targetPrice = price;
+        this.alertOnAbove = above;
+        updateAlertLabel();
+    }
+
+    public void removePriceAlert() {
+        this.targetPrice = null;
+        alertLabel.setVisible(false);
+    }
+
+    private void updateAlertLabel() {
+        if (targetPrice != null) {
+            String direction = alertOnAbove ? "▲" : "▼";
+            alertLabel.setText(direction + " " + targetPrice);
+            alertLabel.setVisible(true);
+            
+            // Set color based on how close we are to target
+            int currentPrice = alertOnAbove ? itemPrice.getHighPrice() : itemPrice.getLowPrice();
+            double ratio = (double) currentPrice / targetPrice;
+            if (alertOnAbove ? ratio >= 1 : ratio <= 1) {
+                alertLabel.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
+            } else if (Math.abs(1 - ratio) < 0.05) {
+                alertLabel.setForeground(ColorScheme.PROGRESS_INPROGRESS_COLOR);
+            } else {
+                alertLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+            }
         }
     }
 
-    // Add getter methods for sorting
-    public ItemPrice getItemPrice() {
-        return item;
+    private void showContextMenu(MouseEvent e) {
+        JPopupMenu contextMenu = new ItemContextMenu(itemPrice, timeEst, marketDataService);
+        contextMenu.show(e.getComponent(), e.getX(), e.getY());
     }
-    
-    public EstimatedTime getTimeEstimate() {
-        return timeEst;
+
+    public ItemPrice getItemPrice() {
+        return itemPrice;
     }
 }

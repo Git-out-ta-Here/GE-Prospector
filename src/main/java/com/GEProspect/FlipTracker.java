@@ -3,81 +3,107 @@ package com.GEProspect;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
-
+import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.time.Instant;
+import java.util.*;
 
 @Slf4j
 @Singleton
 public class FlipTracker {
-    private final Map<Integer, FlipEntry> activeFlips;
-    private final Map<Integer, TradeVolume> volumeData;
+    private final Map<Integer, GrandExchangeOffer> buyOffers = new HashMap<>();
+    private final Map<Integer, GrandExchangeOffer> sellOffers = new HashMap<>();
+    private final ProfitTracker profitTracker;
 
-    public FlipTracker() {
-        this.activeFlips = new ConcurrentHashMap<>();
-        this.volumeData = new ConcurrentHashMap<>();
+    @Inject
+    public FlipTracker(ProfitTracker profitTracker) {
+        this.profitTracker = profitTracker;
     }
 
     public void processOffer(GrandExchangeOffer offer) {
-        int itemId = offer.getItemId();
+        if (offer == null) return;
         
-        switch (offer.getState()) {
+        // In RuneLite, we need to maintain our own slot tracking
+        int slot = offer.getItemId(); // Using itemId as unique identifier since slot isn't available
+        GrandExchangeOfferState state = offer.getState();
+        
+        switch (state) {
             case BUYING:
-            case SELLING:
-                trackActiveOffer(offer);
+                buyOffers.put(slot, offer);
                 break;
-                
+            case SELLING:
+                sellOffers.put(slot, offer);
+                break;
             case BOUGHT:
             case SOLD:
-                completeOffer(offer);
-                updateTradeVolume(itemId, offer.getTotalQuantity());
+                checkForCompletedFlip(slot, offer);
                 break;
-                
             case CANCELLED_BUY:
+                buyOffers.remove(slot);
+                break;
             case CANCELLED_SELL:
-                cancelOffer(offer);
+                sellOffers.remove(slot);
                 break;
         }
     }
 
-    private void trackActiveOffer(GrandExchangeOffer offer) {
-        FlipEntry entry = activeFlips.computeIfAbsent(
-            offer.getItemId(),
-            k -> new FlipEntry(offer.getItemId(), offer.getState() == GrandExchangeOfferState.BUYING)
-        );
-        entry.updateProgress(offer.getQuantitySold(), offer.getTotalQuantity());
-    }
-
-    private void completeOffer(GrandExchangeOffer offer) {
-        FlipEntry entry = activeFlips.get(offer.getItemId());
-        if (entry != null) {
-            entry.complete(offer.getPrice());
-            if (entry.isFlipComplete()) {
-                activeFlips.remove(offer.getItemId());
+    private void checkForCompletedFlip(int slot, GrandExchangeOffer offer) {
+        if (offer.getState() == GrandExchangeOfferState.BOUGHT) {
+            buyOffers.put(slot, offer);
+        } else if (offer.getState() == GrandExchangeOfferState.SOLD) {
+            GrandExchangeOffer buyOffer = buyOffers.get(slot);
+            if (buyOffer != null && buyOffer.getItemId() == offer.getItemId()) {
+                int buyPrice = buyOffer.getPrice();
+                int sellPrice = offer.getPrice();
+                int quantity = Math.min(buyOffer.getTotalQuantity(), offer.getTotalQuantity());
+                int profit = (sellPrice - buyPrice) * quantity;
+                
+                FlipEntry flip = new FlipEntry(
+                    offer.getItemId(),
+                    buyPrice,
+                    sellPrice,
+                    quantity,
+                    profit
+                );
+                
+                profitTracker.addFlip(flip);
+                log.debug("Completed flip: {}", flip);
+                
+                // Clear the offers
+                buyOffers.remove(slot);
+                sellOffers.remove(slot);
             }
         }
     }
 
-    private void cancelOffer(GrandExchangeOffer offer) {
-        activeFlips.remove(offer.getItemId());
+    public List<FlipEntry> getActiveFlips() {
+        List<FlipEntry> activeFlips = new ArrayList<>();
+        for (GrandExchangeOffer offer : buyOffers.values()) {
+            activeFlips.add(new FlipEntry(
+                offer.getItemId(),
+                offer.getPrice(),
+                0,
+                offer.getTotalQuantity(),
+                0
+            ));
+        }
+        for (GrandExchangeOffer offer : sellOffers.values()) {
+            activeFlips.add(new FlipEntry(
+                offer.getItemId(),
+                0,
+                offer.getPrice(),
+                offer.getTotalQuantity(),
+                0
+            ));
+        }
+        return activeFlips;
     }
 
-    private void updateTradeVolume(int itemId, int quantity) {
-        TradeVolume volume = volumeData.computeIfAbsent(itemId, k -> new TradeVolume());
-        volume.addTrade(quantity);
+    public List<FlipEntry> getFlips() {
+        return profitTracker.getHistoricalFlips();
     }
 
     public EstimatedTime getEstimatedTime(int itemId, int quantity) {
-        TradeVolume volume = volumeData.get(itemId);
-        if (volume == null) {
-            return new EstimatedTime(60, 0.5); // Default 60 minutes with 50% confidence
-        }
-        return volume.calculateEstimatedTime(quantity);
-    }
-
-    public Map<Integer, FlipEntry> getActiveFlips() {
-        return new ConcurrentHashMap<>(activeFlips);
+        // Simple implementation - we'll enhance this later with real volume data
+        return EstimatedTime.MEDIUM;
     }
 }

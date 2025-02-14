@@ -1,50 +1,31 @@
 package com.GEProspect;
 
 import lombok.Data;
-import net.runelite.api.GrandExchangeOfferState;
+import java.time.LocalDateTime;
 
 @Data
 public class FlipEntry {
     private final int itemId;
-    private final boolean isBuy;
-    private int quantity;
-    private int totalQuantity;
-    private int buyPrice;
-    private int sellPrice;
-    private long startTime;
-    private long completionTime;
+    private final int buyPrice;
+    private final int sellPrice;
+    private final int quantity;
+    private final int profit;
+    private final LocalDateTime timestamp;
 
-    public FlipEntry(int itemId, boolean isBuy) {
+    public FlipEntry(int itemId, int buyPrice, int sellPrice, int quantity, int profit) {
         this.itemId = itemId;
-        this.isBuy = isBuy;
-        this.startTime = System.currentTimeMillis();
+        this.buyPrice = buyPrice;
+        this.sellPrice = sellPrice;
+        this.quantity = quantity;
+        this.profit = profit;
+        this.timestamp = LocalDateTime.now();
     }
 
-    public void updateProgress(int completed, int total) {
-        this.quantity = completed;
-        this.totalQuantity = total;
+    public int getProfitPerItem() {
+        return sellPrice - buyPrice;
     }
 
-    public void complete(int price) {
-        if (isBuy) {
-            buyPrice = price;
-        } else {
-            sellPrice = price;
-            completionTime = System.currentTimeMillis();
-        }
-    }
-
-    public boolean isFlipComplete() {
-        return buyPrice > 0 && sellPrice > 0;
-    }
-
-    public int getProfit() {
-        if (!isFlipComplete()) return 0;
-        return (sellPrice - buyPrice) * quantity;
-    }
-
-    public long getDuration() {
-        if (completionTime == 0) return System.currentTimeMillis() - startTime;
-        return completionTime - startTime;
+    public LocalDateTime getTimestamp() {
+        return timestamp;
     }
 }

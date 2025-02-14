@@ -45,4 +45,34 @@ public interface GEProspectorConfig extends Config {
     default int updateInterval() {
         return 60;
     }
+
+    @ConfigItem(
+        keyName = "alertSound",
+        name = "Alert Sound",
+        description = "Play a sound when price alerts are triggered",
+        position = 4
+    )
+    default boolean alertSound() {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "chatAlerts",
+        name = "Chat Alerts",
+        description = "Show price alerts in chat",
+        position = 5
+    )
+    default boolean chatAlerts() {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "watchlistSize",
+        name = "Watchlist Size",
+        description = "Maximum number of items in watchlist",
+        position = 6
+    )
+    default int watchlistSize() {
+        return 20;
+    }
 }

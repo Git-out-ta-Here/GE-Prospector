@@ -1,22 +1,22 @@
 package com.GEProspect;
 
+import java.util.Comparator;
+
 public enum SortOption {
-    PROFIT_MARGIN("Profit Margin", (a, b) -> b.getProfitMargin() - a.getProfitMargin()),
-    PRICE("Price", (a, b) -> b.getHighPrice() - a.getHighPrice()),
-    PROFIT_PER_HOUR("Profit/Hour", (a, b, timeEstA, timeEstB) -> {
-        double profitPerHourA = calculateProfitPerHour(a, timeEstA);
-        double profitPerHourB = calculateProfitPerHour(b, timeEstB);
-        return Double.compare(profitPerHourB, profitPerHourA);
+    PROFIT_MARGIN("Profit Margin", (a, b) -> Integer.compare(b.getProfitMargin(), a.getProfitMargin())),
+    PRICE("Price", (a, b) -> Integer.compare(b.getHighPrice(), a.getHighPrice())),
+    PROFIT_PER_HOUR("Profit/Hour", (a, b) -> {
+        int profitA = a.getProfitMargin();
+        int profitB = b.getProfitMargin();
+        return Integer.compare(profitB, profitA);
     }),
-    FLIP_TIME("Flip Time", (a, b, timeEstA, timeEstB) -> 
-        timeEstA.getMinutes() - timeEstB.getMinutes()),
-    VOLUME("Volume", (a, b, timeEstA, timeEstB) -> 
-        timeEstB.getCategory().ordinal() - timeEstA.getCategory().ordinal());
+    FLIP_TIME("Flip Time", (a, b) -> 0), // Will implement with volume data
+    VOLUME("Volume", (a, b) -> 0);  // Will implement with volume data
 
     private final String displayName;
-    private final ItemComparator comparator;
+    private final Comparator<ItemPrice> comparator;
 
-    SortOption(String displayName, ItemComparator comparator) {
+    SortOption(String displayName, Comparator<ItemPrice> comparator) {
         this.displayName = displayName;
         this.comparator = comparator;
     }
@@ -25,23 +25,12 @@ public enum SortOption {
         return displayName;
     }
 
-    public ItemComparator getComparator() {
+    public Comparator<ItemPrice> getComparator() {
         return comparator;
     }
 
-    private static double calculateProfitPerHour(ItemPrice item, EstimatedTime timeEst) {
-        double hours = timeEst.getMinutes() / 60.0;
-        return hours > 0 ? item.getProfitMargin() / hours : 0;
-    }
-
-    @FunctionalInterface
-    public interface ItemComparator {
-        default int compare(ItemPrice a, ItemPrice b, EstimatedTime timeEstA, EstimatedTime timeEstB) {
-            return compare(a, b);
-        }
-        
-        default int compare(ItemPrice a, ItemPrice b) {
-            return 0;
-        }
+    @Override
+    public String toString() {
+        return displayName;
     }
 }
