@@ -3,6 +3,7 @@ package com.GEProspect;
 import net.runelite.client.game.ItemManager;
 import net.runelite.api.ItemComposition;
 import net.runelite.client.callback.ClientThread;
+import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -11,7 +12,9 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
+@Slf4j
 public class ItemSearchDialog extends JDialog {
     private static final int MAX_RESULTS = 100;
     private final ItemManager itemManager;
@@ -88,19 +91,26 @@ public class ItemSearchDialog extends JDialog {
         }
 
         CompletableFuture.runAsync(() -> {
-            clientThread.invoke(() -> {
+            clientThread.invoke((Runnable) () -> {
                 listModel.clear();
                 List<SearchResult> results = new ArrayList<>();
                 
-                // Use ItemManager search and properly check tradeable status
-                List<ItemComposition> items = itemManager.search(search);
-                for (ItemComposition item : items) {
-                    if (item != null && item.isTradeable()) {
-                        results.add(new SearchResult(item.getId(), item.getName()));
-                        if (results.size() >= MAX_RESULTS) {
-                            break;
+                try {
+                    Object searchResults = itemManager.search(search);
+                    if (searchResults instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<ItemComposition> items = (List<ItemComposition>) searchResults;
+                        for (ItemComposition item : items) {
+                            if (item != null && item.isTradeable()) {
+                                results.add(new SearchResult(item.getId(), item.getName()));
+                                if (results.size() >= MAX_RESULTS) {
+                                    break;
+                                }
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    log.error("Error searching items", e);
                 }
                 
                 SwingUtilities.invokeLater(() -> {

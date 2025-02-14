@@ -81,8 +81,8 @@ public class MarketDataService {
                 
                 ItemPrice price = new ItemPrice(
                     itemId,
-                    priceData.get("high").getAsInt(),
-                    priceData.get("low").getAsInt(),
+                    priceData.get("high").toString(),
+                    priceData.get("low").toString(),
                     System.currentTimeMillis()
                 );
                 

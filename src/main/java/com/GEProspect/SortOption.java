@@ -4,7 +4,7 @@ import java.util.Comparator;
 
 public enum SortOption {
     PROFIT_MARGIN("Profit Margin", (a, b) -> Integer.compare(b.getProfitMargin(), a.getProfitMargin())),
-    PRICE("Price", (a, b) -> Integer.compare(b.getHighPrice(), a.getHighPrice())),
+    PRICE("Price", (a, b) -> Integer.compare(b.getHighPriceAsInt(), a.getHighPriceAsInt())),
     PROFIT_PER_HOUR("Profit/Hour", (a, b) -> {
         int profitA = a.getProfitMargin();
         int profitB = b.getProfitMargin();

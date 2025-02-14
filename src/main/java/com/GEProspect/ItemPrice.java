@@ -5,45 +5,71 @@ import lombok.Data;
 @Data
 public class ItemPrice {
     private final int itemId;
-    private final String name;
-    private final int lowPrice;
-    private final int highPrice;
-    private final int profitMargin;
+    private final String highPrice;
+    private final String lowPrice;
+    private final long timestamp;
+    private String name;  // Add name field
 
-    public ItemPrice(int itemId, String name, int lowPrice, int highPrice) {
+    public ItemPrice(int itemId, String highPrice, String lowPrice, long timestamp) {
         this.itemId = itemId;
-        this.name = name;
-        this.lowPrice = lowPrice;
         this.highPrice = highPrice;
-        this.profitMargin = highPrice - lowPrice;
+        this.lowPrice = lowPrice;
+        this.timestamp = timestamp;
     }
 
     public int getItemId() {
         return itemId;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public int getLowPrice() {
-        return lowPrice;
-    }
-
-    public int getHighPrice() {
+    public String getHighPrice() {
         return highPrice;
     }
 
+    public String getLowPrice() {
+        return lowPrice;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public int getHighPriceAsInt() {
+        try {
+            return Integer.parseInt(highPrice);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    public int getLowPriceAsInt() {
+        try {
+            return Integer.parseInt(lowPrice);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     public int getProfitMargin() {
-        return profitMargin;
+        return getHighPriceAsInt() - getLowPriceAsInt();
     }
 
     public double getProfitPercentage() {
-        if (lowPrice == 0) return 0;
-        return ((double) getProfitMargin() / lowPrice) * 100;
+        try {
+            int low = getLowPriceAsInt();
+            if (low == 0) return 0;
+            return ((double) getProfitMargin() / low) * 100;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     public boolean isValidPrice() {
-        return highPrice > 0 && lowPrice > 0;
+        try {
+            int high = getHighPriceAsInt();
+            int low = getLowPriceAsInt();
+            return high > 0 && low > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

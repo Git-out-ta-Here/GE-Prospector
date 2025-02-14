@@ -2,7 +2,6 @@ package com.GEProspect;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
-import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 import net.runelite.client.util.ImageUtil;
@@ -40,7 +39,7 @@ public class GEProspectorPanel extends PluginPanel {
     
     private final List<ItemPanel> itemPanels = new ArrayList<>();
     private SortOption currentSort = SortOption.PROFIT_MARGIN;
-    
+
     @Inject
     public GEProspectorPanel(
             MarketDataService marketDataService,
@@ -58,8 +57,6 @@ public class GEProspectorPanel extends PluginPanel {
         this.itemManager = itemManager;
         this.clientThread = clientThread;
         
-        this.profitDashboardPanel = new ProfitDashboard(flipTracker, itemManager);
-        
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARK_GRAY_COLOR);
         
@@ -67,60 +64,41 @@ public class GEProspectorPanel extends PluginPanel {
         sortBox = new JComboBox<>(SortOption.values());
         sortBox.setForeground(Color.WHITE);
         sortBox.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        sortBox.setRenderer(new ComboBoxListRenderer<>());
         sortBox.setFocusable(false);
+        sortBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, 
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setForeground(Color.WHITE);
+                setBackground(isSelected ? ColorScheme.DARKER_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+                setText(((SortOption) value).getDisplayName());
+                return this;
+            }
+        });
         sortBox.addActionListener(e -> {
             currentSort = (SortOption) sortBox.getSelectedItem();
             updateSort();
+            refreshPanels();
         });
-        
-        setupHeader();
-        setupTabs();
+
+        // Initialize tab panels
         setupMainDisplay();
-    }
-    
-    private void setupHeader() {
-        JPanel header = new JPanel();
-        header.setLayout(new BorderLayout());
-        header.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        header.setBorder(new EmptyBorder(10, 10, 10, 10));
+        setupTabs();
         
-        // Title
-        JLabel title = new JLabel("GE Prospector");
-        title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+        // Add components
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        topPanel.setBorder(new EmptyBorder(10, 10, 0, 10));
+        topPanel.add(sortBox, BorderLayout.EAST);
         
-        // Sort controls
-        JPanel controls = new JPanel(new BorderLayout(5, 0));
-        controls.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        controls.add(new JLabel("Sort by:"), BorderLayout.WEST);
-        controls.add(sortBox, BorderLayout.CENTER);
+        add(topPanel, BorderLayout.NORTH);
+        add(mainDisplay, BorderLayout.CENTER);
         
-        header.add(title, BorderLayout.WEST);
-        header.add(controls, BorderLayout.EAST);
-        add(header, BorderLayout.NORTH);
-    }
-    
-    private void setupTabs() {
-        // Active Flips tab
-        MaterialTab activeFlipsTab = new MaterialTab("Active Flips", tabGroup, activeFlipsPanel);
-        tabGroup.addTab(activeFlipsTab);
-        
-        // Search tab
-        MaterialTab searchTab = new MaterialTab("Search", tabGroup, searchPanel);
-        tabGroup.addTab(searchTab);
-        
-        // Watchlist tab
-        MaterialTab watchlistTab = new MaterialTab("Watchlist", tabGroup, watchlistPanel);
-        tabGroup.addTab(watchlistTab);
-        
-        // Profit Dashboard tab
-        MaterialTab profitTab = new MaterialTab("Profit", tabGroup, profitDashboardPanel);
-        tabGroup.addTab(profitTab);
-        
-        // Select the first tab
-        tabGroup.select(activeFlipsTab);
-        
-        add(tabGroup, BorderLayout.NORTH);
+        // Initial panel updates
+        updateActiveFlips();
+        updateSearchResults();
+        updateWatchlist();
     }
     
     private void setupMainDisplay() {
@@ -130,8 +108,24 @@ public class GEProspectorPanel extends PluginPanel {
         setupActiveFlipsPanel();
         setupSearchPanel();
         setupWatchlistPanel();
+    }
+    
+    private void setupTabs() {
+        MaterialTab activeFlipsTab = new MaterialTab("Active Flips", tabGroup, activeFlipsPanel);
+        MaterialTab searchTab = new MaterialTab("Search", tabGroup, searchPanel);
+        MaterialTab watchlistTab = new MaterialTab("Watchlist", tabGroup, watchlistPanel);
         
-        add(mainDisplay, BorderLayout.CENTER);
+        tabGroup.addTab(activeFlipsTab);
+        tabGroup.addTab(searchTab);
+        tabGroup.addTab(watchlistTab);
+        tabGroup.select(activeFlipsTab);
+        
+        JPanel tabPanel = new JPanel(new BorderLayout());
+        tabPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        tabPanel.add(tabGroup, BorderLayout.NORTH);
+        tabPanel.add(mainDisplay, BorderLayout.CENTER);
+        
+        add(tabPanel, BorderLayout.CENTER);
     }
     
     private void setupActiveFlipsPanel() {

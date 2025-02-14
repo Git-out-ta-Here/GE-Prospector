@@ -22,7 +22,6 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @PluginDescriptor(
@@ -92,53 +91,38 @@ public class GEProspectorPlugin extends Plugin {
             clientThread
         );
 
-        // Schedule alert checks
-        executor.scheduleAtFixedRate(
-            () -> {
-                watchlistManager.checkAlerts();
-                SwingUtilities.invokeLater(() -> panel.updateWatchlist());
-            },
-            30,
-            30,
-            TimeUnit.SECONDS
-        );
-
-        // Load the icon
+        // Load the plugin icon
         final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
-
+        
         navButton = NavigationButton.builder()
-            .tooltip("GE-Prospector")
+            .tooltip("GE Prospector")
             .icon(icon)
             .priority(5)
             .panel(panel)
             .build();
 
         clientToolbar.addNavigation(navButton);
+        
+        // Schedule regular price updates
+        marketDataService.refreshPrices();
     }
 
     @Override
-    protected void shutDown() throws Exception {
-        log.info("GE-Prospector shutting down");
+    protected void shutDown() {
         clientToolbar.removeNavigation(navButton);
         marketDataService.shutdown();
-        executor.shutdown();
-    }
-
-    @Subscribe
-    public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged event) {
-        if (!config.isEnabled()) return;
-        flipTracker.processOffer(event.getOffer());
-    }
-
-    @Subscribe
-    public void onGameStateChanged(GameStateChanged event) {
-        if (event.getGameState() == GameState.LOGGED_IN) {
-            marketDataService.refreshPrices();
-        }
     }
 
     @Provides
     GEProspectorConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(GEProspectorConfig.class);
+    }
+
+    @Subscribe
+    public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged event) {
+        if (event.getOffer() != null) {
+            flipTracker.processOffer(event.getOffer());
+            SwingUtilities.invokeLater(() -> panel.updateActiveFlips());
+        }
     }
 }

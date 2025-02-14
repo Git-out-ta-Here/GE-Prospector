@@ -100,28 +100,35 @@ public class WatchlistManager {
         }
 
         for (WatchedItem item : watchlist.values()) {
-            ItemPrice currentPrice = marketDataService.getPrice(item.getItemId());
-            if (currentPrice != null) {
-                boolean triggered = item.isAlertOnAbove() 
-                    ? currentPrice.getHighPrice() >= item.getTargetPrice()
-                    : currentPrice.getLowPrice() <= item.getTargetPrice();
+            boolean triggered = checkPriceAlert(item);
                 
-                if (triggered && !item.isAlertTriggered()) {
-                    item.setAlertTriggered(true);
-                    sendAlert(item, currentPrice);
-                } else if (!triggered && item.isAlertTriggered()) {
-                    // Reset trigger if price moves back
-                    item.setAlertTriggered(false);
-                }
+            if (triggered && !item.isAlertTriggered()) {
+                item.setAlertTriggered(true);
+                sendAlert(item);
+            } else if (!triggered && item.isAlertTriggered()) {
+                // Reset trigger if price moves back
+                item.setAlertTriggered(false);
             }
         }
     }
 
-    private void sendAlert(WatchedItem item, ItemPrice currentPrice) {
+    private boolean checkPriceAlert(WatchedItem item) {
+        ItemPrice currentPrice = marketDataService.getPrice(item.getItemId());
+        if (currentPrice == null) return false;
+        
+        return item.isAlertOnAbove()
+            ? currentPrice.getHighPriceAsInt() >= item.getTargetPrice()
+            : currentPrice.getLowPriceAsInt() <= item.getTargetPrice();
+    }
+
+    private void sendAlert(WatchedItem item) {
+        ItemPrice currentPrice = marketDataService.getPrice(item.getItemId());
+        if (currentPrice == null) return;
+
         String message = String.format("%s has %s %,d gp (target: %,d)",
             item.getItemName(),
             item.isAlertOnAbove() ? "risen above" : "fallen below",
-            item.isAlertOnAbove() ? currentPrice.getHighPrice() : currentPrice.getLowPrice(),
+            item.isAlertOnAbove() ? currentPrice.getHighPriceAsInt() : currentPrice.getLowPriceAsInt(),
             item.getTargetPrice()
         );
 
