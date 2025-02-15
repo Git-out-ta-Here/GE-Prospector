@@ -1,43 +1,94 @@
 package com.prospector.model;
 
-import lombok.Data;
 import lombok.Builder;
+import lombok.Data;
+import lombok.AllArgsConstructor;
 
 @Data
 @Builder
+@AllArgsConstructor
 public class FlipOpportunity {
-    private int itemId;
-    private String itemName;
-    private long buyPrice;
-    private long sellPrice;
-    private long margin;
-    private double roi;
-    private int estimatedTimeMinutes;
-    private int hourlyVolume;
-    private FlipRisk risk;
-    private TrendDirection trendDirection;
+    private final int itemId;
+    private final String itemName;
+    private final long buyPrice;
+    private final long sellPrice;
+    private final long margin;
+    private final double roi;
+    private final int estimatedTimeMinutes;
+    private final int hourlyVolume;
+    private final FlipRisk risk;
+    private final TrendDirection trendDirection;
 
     public enum FlipRisk {
-        LOW,
-        MEDIUM,
-        HIGH
+        LOW("Low Risk"),
+        MEDIUM("Medium Risk"),
+        HIGH("High Risk");
+
+        private final String displayName;
+
+        FlipRisk(String displayName) {
+            this.displayName = displayName;
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
     }
 
     public enum TrendDirection {
-        UPWARD,
-        DOWNWARD,
-        STABLE,
-        VOLATILE
+        UPWARD("↑"),
+        DOWNWARD("↓"),
+        STABLE("→"),
+        VOLATILE("↕");
+
+        private final String symbol;
+
+        TrendDirection(String symbol) {
+            this.symbol = symbol;
+        }
+
+        @Override
+        public String toString() {
+            return symbol;
+        }
     }
 
-    public double getProfitPerHour() {
-        if (estimatedTimeMinutes <= 0) return 0;
-        return (margin * (60.0 / estimatedTimeMinutes));
+    public boolean meetsThresholds(long minMargin, double minRoi, int riskTolerance) {
+        if (margin < minMargin || roi < minRoi) {
+            return false;
+        }
+
+        switch (risk) {
+            case LOW:
+                return true;
+            case MEDIUM:
+                return riskTolerance >= 2;
+            case HIGH:
+                return riskTolerance >= 3;
+            default:
+                return false;
+        }
     }
 
-    public boolean meetsThresholds(int minMargin, double minRoi, int maxRisk) {
-        return margin >= minMargin &&
-               roi >= minRoi &&
-               risk.ordinal() <= maxRisk;
+    public String getVolumeIndicator() {
+        if (hourlyVolume > 100) {
+            return "🟢"; // Very High
+        } else if (hourlyVolume > 50) {
+            return "🟡"; // High
+        } else if (hourlyVolume > 25) {
+            return "🟠"; // Medium
+        } else if (hourlyVolume > 10) {
+            return "🔴"; // Low
+        } else {
+            return "⚫"; // Very Low
+        }
+    }
+
+    public String getTimeEstimate() {
+        if (estimatedTimeMinutes < 60) {
+            return estimatedTimeMinutes + "m";
+        }
+        return (estimatedTimeMinutes / 60) + "h " + (estimatedTimeMinutes % 60) + "m";
     }
 }
