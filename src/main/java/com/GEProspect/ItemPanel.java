@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -13,14 +13,19 @@ public class ItemPanel extends JPanel {
     private final ItemPrice itemPrice;
     private final EstimatedTime timeEst;
     private final MarketDataService marketDataService;
+    private final PriceChartPanel priceChart;
     private JLabel alertLabel;
     private Integer targetPrice;
     private boolean alertOnAbove;
+    private boolean isExpanded = false;
+    private final JPanel expandedContent;
 
     public ItemPanel(ItemPrice itemPrice, EstimatedTime timeEst, MarketDataService marketDataService) {
         this.itemPrice = itemPrice;
         this.timeEst = timeEst;
         this.marketDataService = marketDataService;
+        this.priceChart = new PriceChartPanel();
+        this.expandedContent = new JPanel(new BorderLayout());
         
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -30,22 +35,25 @@ public class ItemPanel extends JPanel {
         ));
 
         setupComponents();
+        setupExpandedContent();
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     showContextMenu(e);
+                } else if (SwingUtilities.isLeftMouseButton(e)) {
+                    toggleExpanded();
                 }
             }
         });
+
+        // Initial price update
+        updatePriceChart();
     }
 
     private void setupComponents() {
-        setLayout(new BorderLayout(5, 0));
-        setBorder(new CompoundBorder(
-            new EmptyBorder(5, 5, 5, 5),
-            new LineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR)
-        ));
+        JPanel mainContent = new JPanel(new BorderLayout(5, 0));
+        mainContent.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
         JLabel nameLabel = new JLabel(itemPrice.getName() != null ? itemPrice.getName() : String.valueOf(itemPrice.getItemId()));
         nameLabel.setForeground(Color.WHITE);
@@ -56,9 +64,35 @@ public class ItemPanel extends JPanel {
         alertLabel = new JLabel();
         updateAlertLabel();
 
-        add(nameLabel, BorderLayout.WEST);
-        add(priceLabel, BorderLayout.CENTER);
-        add(alertLabel, BorderLayout.EAST);
+        mainContent.add(nameLabel, BorderLayout.WEST);
+        mainContent.add(priceLabel, BorderLayout.CENTER);
+        mainContent.add(alertLabel, BorderLayout.EAST);
+
+        add(mainContent, BorderLayout.NORTH);
+    }
+
+    private void setupExpandedContent() {
+        expandedContent.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        expandedContent.setBorder(new EmptyBorder(5, 0, 0, 0));
+        expandedContent.add(priceChart, BorderLayout.CENTER);
+        expandedContent.setVisible(false);
+        add(expandedContent, BorderLayout.CENTER);
+    }
+
+    private void toggleExpanded() {
+        isExpanded = !isExpanded;
+        expandedContent.setVisible(isExpanded);
+        if (isExpanded) {
+            updatePriceChart();
+        }
+        revalidate();
+        repaint();
+    }
+
+    private void updatePriceChart() {
+        priceChart.clearData();
+        priceChart.addPrice(itemPrice.getLowPriceAsInt(), itemPrice.getHighPriceAsInt());
+        // TODO: Add historical price data when available
     }
 
     private Color getProfitColor(int profit) {

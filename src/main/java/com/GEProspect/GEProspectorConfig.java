@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect ;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;

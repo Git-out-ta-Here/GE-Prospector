@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect ;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

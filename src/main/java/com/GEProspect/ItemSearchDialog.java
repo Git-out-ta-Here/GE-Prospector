@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect ;
 
 import net.runelite.client.game.ItemManager;
 import net.runelite.api.ItemComposition;

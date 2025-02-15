@@ -68,7 +68,7 @@ author=Your Name
 support=https://github.com/yourusername/ge-prospector
 description=Grand Exchange flipping assistant with time estimation
 tags=grand exchange,flipping,money making,merching
-plugins=com.geprospect.GEProspectorPlugin
+plugins=com.geprospect .GEProspectorPlugin
 ```
 
 2. API Configuration

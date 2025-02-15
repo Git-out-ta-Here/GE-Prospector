@@ -1,46 +1,45 @@
-package com.GEProspect;
+package com.geprospect ;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
-import net.runelite.client.util.ImageUtil;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.ui.FontManager;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class GEProspectorPanel extends PluginPanel {
+    // Services
     private final MarketDataService marketDataService;
     private final FlipTracker flipTracker;
     private final WatchlistManager watchlistManager;
     private final GEProspectorConfig config;
     private final ItemManager itemManager;
     private final ClientThread clientThread;
-    
-    private final JPanel mainDisplay = new JPanel();
-    private final JPanel activeFlipsPanel = new JPanel();
-    private final JPanel searchPanel = new JPanel();
-    private final JPanel watchlistPanel = new JPanel();
-    private final JPanel profitDashboardPanel;
-    private final MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
-    private final JComboBox<SortOption> sortBox;
-    
-    private final List<ItemPanel> itemPanels = new ArrayList<>();
-    private SortOption currentSort = SortOption.PROFIT_MARGIN;
 
-    @Inject
+    // UI Components
+    private final JPanel mainDisplay;
+    private final MaterialTabGroup tabGroup;
+    private final JComboBox<SortOption> sortBox;
+    private final List<ItemPanel> itemPanels = new ArrayList<>();
+
+    // Tab Panels
+    private final JPanel activeFlipsTab;
+    private final JPanel searchTab;
+    private final JPanel watchlistTab;
+
+    // Current state
+    private SortOption currentSort = SortOption.PROFIT_MARGIN;
+    private static final int PANEL_BORDER_SIZE = 10;
+
     public GEProspectorPanel(
             MarketDataService marketDataService,
             FlipTracker flipTracker,
@@ -50,267 +49,251 @@ public class GEProspectorPanel extends PluginPanel {
             ClientThread clientThread) {
         super(false);
         
+        // Initialize services
         this.marketDataService = marketDataService;
         this.flipTracker = flipTracker;
         this.watchlistManager = watchlistManager;
         this.config = config;
         this.itemManager = itemManager;
         this.clientThread = clientThread;
-        
-        setLayout(new BorderLayout());
-        setBackground(ColorScheme.DARK_GRAY_COLOR);
-        
-        // Initialize sort box
-        sortBox = new JComboBox<>(SortOption.values());
-        sortBox.setForeground(Color.WHITE);
-        sortBox.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        sortBox.setFocusable(false);
-        sortBox.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, 
-                    int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setForeground(Color.WHITE);
-                setBackground(isSelected ? ColorScheme.DARKER_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
-                setText(((SortOption) value).getDisplayName());
-                return this;
-            }
-        });
-        sortBox.addActionListener(e -> {
-            currentSort = (SortOption) sortBox.getSelectedItem();
-            updateSort();
-            refreshPanels();
-        });
 
-        // Initialize tab panels
-        setupMainDisplay();
+        // Initialize UI components
+        this.mainDisplay = new JPanel();
+        this.tabGroup = new MaterialTabGroup(mainDisplay);
+        this.activeFlipsTab = createTabPanel();
+        this.searchTab = createTabPanel();
+        this.watchlistTab = createTabPanel();
+        this.sortBox = createSortBox();
+
+        // Setup UI
+        setupLayout();
         setupTabs();
         
-        // Add components
+        // Initial data load
+        updateAllTabs();
+    }
+
+    private JPanel createTabPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        panel.setBorder(new EmptyBorder(PANEL_BORDER_SIZE, PANEL_BORDER_SIZE, PANEL_BORDER_SIZE, PANEL_BORDER_SIZE));
+        return panel;
+    }
+
+    private JComboBox<SortOption> createSortBox() {
+        JComboBox<SortOption> box = new JComboBox<>(SortOption.values());
+        box.setForeground(Color.WHITE);
+        box.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        box.setFocusable(false);
+        box.setRenderer(new SortOptionRenderer());
+        box.addActionListener(e -> {
+            currentSort = (SortOption) box.getSelectedItem();
+            updateAllTabs();
+        });
+        return box;
+    }
+
+    private void setupLayout() {
+        setLayout(new BorderLayout());
+        setBackground(ColorScheme.DARK_GRAY_COLOR);
+
+        // Top panel with sort box
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        topPanel.setBorder(new EmptyBorder(10, 10, 0, 10));
+        topPanel.setBorder(new EmptyBorder(PANEL_BORDER_SIZE, PANEL_BORDER_SIZE, 0, PANEL_BORDER_SIZE));
         topPanel.add(sortBox, BorderLayout.EAST);
         
         add(topPanel, BorderLayout.NORTH);
         add(mainDisplay, BorderLayout.CENTER);
-        
-        // Initial panel updates
-        updateActiveFlips();
-        updateSearchResults();
-        updateWatchlist();
     }
-    
-    private void setupMainDisplay() {
-        mainDisplay.setLayout(new BorderLayout());
-        mainDisplay.setBackground(ColorScheme.DARK_GRAY_COLOR);
-        
-        setupActiveFlipsPanel();
-        setupSearchPanel();
-        setupWatchlistPanel();
-    }
-    
+
     private void setupTabs() {
-        MaterialTab activeFlipsTab = new MaterialTab("Active Flips", tabGroup, activeFlipsPanel);
-        MaterialTab searchTab = new MaterialTab("Search", tabGroup, searchPanel);
-        MaterialTab watchlistTab = new MaterialTab("Watchlist", tabGroup, watchlistPanel);
-        
+        MaterialTab activeFlipsTab = new MaterialTab("Active Flips", tabGroup, this.activeFlipsTab);
+        MaterialTab searchTab = new MaterialTab("Search", tabGroup, this.searchTab);
+        MaterialTab watchlistTab = new MaterialTab("Watchlist", tabGroup, this.watchlistTab);
+
         tabGroup.addTab(activeFlipsTab);
         tabGroup.addTab(searchTab);
         tabGroup.addTab(watchlistTab);
         tabGroup.select(activeFlipsTab);
-        
+
+        // Setup search functionality
+        setupSearchTab();
+        setupWatchlistTab();
+
+        // Add tabs to main panel
         JPanel tabPanel = new JPanel(new BorderLayout());
         tabPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         tabPanel.add(tabGroup, BorderLayout.NORTH);
         tabPanel.add(mainDisplay, BorderLayout.CENTER);
-        
+
         add(tabPanel, BorderLayout.CENTER);
     }
-    
-    private void setupActiveFlipsPanel() {
-        activeFlipsPanel.setLayout(new BoxLayout(activeFlipsPanel, BoxLayout.Y_AXIS));
-        activeFlipsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-        activeFlipsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-    }
-    
-    private void setupSearchPanel() {
-        searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.Y_AXIS));
-        searchPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-        searchPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        // Search input
+
+    private void setupSearchTab() {
         JTextField searchField = new JTextField();
         searchField.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        searchField.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-        searchField.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        searchField.setForeground(Color.WHITE);
+        searchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
         
-        searchPanel.add(searchField);
+        searchField.addActionListener(e -> updateSearchResults(searchField.getText()));
+        
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        searchPanel.setBorder(new EmptyBorder(0, 0, PANEL_BORDER_SIZE, 0));
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        
+        searchTab.add(searchPanel, BorderLayout.NORTH);
     }
-    
-    private void setupWatchlistPanel() {
-        watchlistPanel.setLayout(new BoxLayout(watchlistPanel, BoxLayout.Y_AXIS));
-        watchlistPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-        
-        // Add "Add Item" button
+
+    private void setupWatchlistTab() {
         JButton addButton = new JButton("Add Item");
         addButton.addActionListener(e -> showAddWatchlistDialog());
-        
+
         JPanel buttonPanel = new JPanel(new BorderLayout());
         buttonPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-        buttonPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        buttonPanel.setBorder(new EmptyBorder(0, 0, PANEL_BORDER_SIZE, 0));
         buttonPanel.add(addButton, BorderLayout.EAST);
-        
-        watchlistPanel.add(buttonPanel);
+
+        watchlistTab.add(buttonPanel, BorderLayout.NORTH);
+    }
+
+    public void updateAllTabs() {
+        updateActiveFlips();
+        updateSearchResults("");
         updateWatchlist();
-    }
-    
-    private boolean isOnActiveFlipsTab() {
-        for (Component c : tabGroup.getComponents()) {
-            if (c instanceof MaterialTab) {
-                MaterialTab tab = (MaterialTab) c;
-                if (tab.isSelected() && tab.getText().equals("Active Flips")) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean isOnSearchTab() {
-        for (Component c : tabGroup.getComponents()) {
-            if (c instanceof MaterialTab) {
-                MaterialTab tab = (MaterialTab) c;
-                if (tab.isSelected() && tab.getText().equals("Search")) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void updateSort() {
-        itemPanels.sort((a, b) -> {
-            ItemPrice itemA = a.getItemPrice();
-            ItemPrice itemB = b.getItemPrice();
-            EstimatedTime timeA = flipTracker.getEstimatedTime(itemA.getItemId(), 1);
-            EstimatedTime timeB = flipTracker.getEstimatedTime(itemB.getItemId(), 1);
-            
-            return currentSort.getComparator().compare(itemA, itemB);
-        });
-
-        refreshPanels();
-    }
-
-    private void refreshPanels() {
-        if (isOnActiveFlipsTab()) {
-            updateActiveFlips();
-        } else if (isOnSearchTab()) {
-            updateSearchResults();
-        } else {
-            updateWatchlist();
-        }
     }
 
     public void updateActiveFlips() {
-        List<FlipEntry> activeFlips = flipTracker.getActiveFlips();
+        activeFlipsTab.removeAll();
         
-        activeFlipsPanel.removeAll();
+        List<FlipEntry> activeFlips = flipTracker.getActiveFlips();
         for (FlipEntry flip : activeFlips) {
             ItemPrice price = marketDataService.getPrice(flip.getItemId());
             if (price != null) {
-                ItemPanel panel = new ItemPanel(price, flipTracker.getEstimatedTime(flip.getItemId(), flip.getQuantity()), marketDataService);
-                activeFlipsPanel.add(panel);
+                ItemPanel panel = new ItemPanel(
+                    price,
+                    flipTracker.getEstimatedTime(flip.getItemId(), flip.getQuantity()),
+                    marketDataService
+                );
+                activeFlipsTab.add(panel);
             }
         }
         
-        activeFlipsPanel.revalidate();
-        activeFlipsPanel.repaint();
+        activeFlipsTab.revalidate();
+        activeFlipsTab.repaint();
     }
-    
-    public void updateSearchResults() {
-        searchPanel.removeAll();
-        
-        // Get all items with profit margins above minimum
+
+    private void updateSearchResults(String searchTerm) {
+        searchTab.removeAll();
+
         List<ItemPrice> items = marketDataService.getAllPrices().stream()
             .filter(item -> item.getProfitMargin() >= config.minimumProfit())
+            .filter(item -> searchTerm.isEmpty() || 
+                (item.getName() != null && item.getName().toLowerCase().contains(searchTerm.toLowerCase())))
+            .sorted(currentSort.getComparator())
             .collect(Collectors.toList());
-        
-        // Sort items
-        updateSort();
-        
-        // Create panels for each item
+
         for (ItemPrice item : items) {
             ItemPanel itemPanel = new ItemPanel(
                 item,
                 flipTracker.getEstimatedTime(item.getItemId(), 1),
                 marketDataService
             );
-            searchPanel.add(itemPanel);
+            searchTab.add(itemPanel);
         }
-        
-        searchPanel.revalidate();
-        searchPanel.repaint();
+
+        searchTab.revalidate();
+        searchTab.repaint();
     }
 
-    public void updateWatchlist() {
-        watchlistPanel.removeAll();
+    private void updateWatchlist() {
+        watchlistTab.removeAll();
         
-        // Add "Add Item" button first
+        // Re-add the "Add Item" button
         JButton addButton = new JButton("Add Item");
         addButton.addActionListener(e -> showAddWatchlistDialog());
-        watchlistPanel.add(addButton);
-        
+        watchlistTab.add(addButton);
+
         // Add watched items
         for (WatchlistManager.WatchedItem item : watchlistManager.getWatchedItems()) {
             ItemPrice price = marketDataService.getPrice(item.getItemId());
             if (price != null) {
-                ItemPanel panel = new ItemPanel(price, flipTracker.getEstimatedTime(item.getItemId(), 1), marketDataService);
+                ItemPanel panel = new ItemPanel(
+                    price,
+                    flipTracker.getEstimatedTime(item.getItemId(), 1),
+                    marketDataService
+                );
                 panel.addPriceAlert(item.getTargetPrice(), item.isAlertOnAbove());
-                watchlistPanel.add(panel);
+                watchlistTab.add(panel);
             }
         }
-        
-        watchlistPanel.revalidate();
-        watchlistPanel.repaint();
+
+        watchlistTab.revalidate();
+        watchlistTab.repaint();
     }
-    
+
     private void showAddWatchlistDialog() {
         ItemSearchDialog dialog = new ItemSearchDialog(
             SwingUtilities.getWindowAncestor(this),
             itemManager,
             clientThread
         );
-        
+
         ItemSearchDialog.SearchResult result = dialog.showDialog();
         if (result != null) {
-            JTextField priceField = new JTextField(10);
-            JComboBox<String> conditionBox = new JComboBox<>(new String[]{"Price above", "Price below"});
-            
-            JPanel panel = new JPanel(new GridLayout(0, 1));
-            panel.add(new JLabel("Item: " + result.name));
-            panel.add(new JLabel("Target price:"));
-            panel.add(priceField);
-            panel.add(new JLabel("Alert when:"));
-            panel.add(conditionBox);
-            
-            int dialogResult = JOptionPane.showConfirmDialog(this, panel, 
-                "Set Price Alert", JOptionPane.OK_CANCEL_OPTION);
-                
-            if (dialogResult == JOptionPane.OK_OPTION) {
-                try {
-                    int targetPrice = Integer.parseInt(priceField.getText());
-                    boolean alertOnAbove = conditionBox.getSelectedIndex() == 0;
-                    
-                    watchlistManager.addToWatchlist(result.id, result.name, targetPrice, alertOnAbove);
-                    updateWatchlist();
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(this,
-                        "Please enter a valid price",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                }
+            showPriceAlertDialog(result);
+        }
+    }
+
+    private void showPriceAlertDialog(ItemSearchDialog.SearchResult result) {
+        JTextField priceField = new JTextField(10);
+        JComboBox<String> conditionBox = new JComboBox<>(new String[]{"Price above", "Price below"});
+
+        JPanel panel = new JPanel(new GridLayout(0, 1));
+        panel.add(new JLabel("Item: " + result.name));
+        panel.add(new JLabel("Target price:"));
+        panel.add(priceField);
+        panel.add(new JLabel("Alert when:"));
+        panel.add(conditionBox);
+
+        int dialogResult = JOptionPane.showConfirmDialog(
+            this,
+            panel,
+            "Set Price Alert",
+            JOptionPane.OK_CANCEL_OPTION
+        );
+
+        if (dialogResult == JOptionPane.OK_OPTION) {
+            try {
+                int targetPrice = Integer.parseInt(priceField.getText());
+                boolean alertOnAbove = conditionBox.getSelectedIndex() == 0;
+                watchlistManager.addToWatchlist(result.id, result.name, targetPrice, alertOnAbove);
+                updateWatchlist();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter a valid price",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
             }
+        }
+    }
+
+    private static class SortOptionRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(
+                JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            setForeground(Color.WHITE);
+            setBackground(isSelected ? ColorScheme.DARKER_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+            setText(((SortOption) value).getDisplayName());
+            return this;
         }
     }
 }

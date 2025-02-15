@@ -34,7 +34,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:4.5.1'
 }
 
-group = 'com.geprospect'
+group = 'com.geprospect '
 version = '1.0.0'
 
 tasks.withType(JavaCompile).configureEach {

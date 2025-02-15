@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect ;
 
 import net.runelite.client.ui.ColorScheme;
 import org.jfree.chart.ChartFactory;

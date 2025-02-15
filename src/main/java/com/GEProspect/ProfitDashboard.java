@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect ;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

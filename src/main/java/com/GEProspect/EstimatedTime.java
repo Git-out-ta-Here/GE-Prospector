@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect ;
 
 public class EstimatedTime {
     public static final EstimatedTime VERY_HIGH = new EstimatedTime(5, 0.9);

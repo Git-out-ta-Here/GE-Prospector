@@ -1,4 +1,4 @@
-package com.GEProspect;
+package com.geprospect ;
 
 import lombok.Data;
 import java.time.LocalDateTime;
