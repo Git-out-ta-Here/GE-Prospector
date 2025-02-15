@@ -15,19 +15,19 @@ GE-Prospector is a RuneLite plugin that provides intelligent Grand Exchange flip
 ## Development Phases
 
 ### Phase 1: Core Infrastructure (Week 1)
-- [ ] Set up RuneLite plugin structure
-  - [ ] Plugin class with proper lifecycle management
-  - [ ] Configuration using RuneLite ConfigManager
-  - [ ] Event subscriptions setup
-  - [ ] Core data models with RuneLite integration
-- [ ] Implement API integration
-  - [ ] RuneLite Item API client for item data
-  - [ ] OSRS Wiki Prices API client
-  - [ ] GE offer tracking system
-- [ ] Create data caching system
-  - [ ] Price data cache (1 min TTL)
-  - [ ] Item data cache using RuneLite ItemManager
-  - [ ] Market trends cache (15 min TTL)
+- [x] Set up RuneLite plugin structure
+  - [x] Plugin class with proper lifecycle management
+  - [x] Configuration using RuneLite ConfigManager
+  - [x] Event subscriptions setup
+  - [x] Core data models with RuneLite integration
+- [x] Implement API integration
+  - [x] RuneLite Item API client for item data
+  - [x] OSRS Wiki Prices API client
+  - [x] GE offer tracking system
+- [x] Create data caching system
+  - [x] Price data cache (1 min TTL)
+  - [x] Item data cache using RuneLite ItemManager
+  - [x] Market trends cache (15 min TTL)
 
 ### Phase 2: UI Integration (Week 2)
 - [ ] Implement RuneLite panel system

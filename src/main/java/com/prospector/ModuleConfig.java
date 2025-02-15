@@ -16,6 +16,10 @@ public class ModuleConfig extends AbstractModule {
     @Override
     protected void configure() {
         bind(PriceApiClient.class).to(OSRSWikiPriceClient.class).in(Singleton.class);
+        bind(CacheService.class).in(Singleton.class);
+        bind(GETrackingService.class).in(Singleton.class);
+        bind(AlertService.class).in(Singleton.class);
+        bind(FlipAnalysisService.class).in(Singleton.class);
     }
 
     @Provides
@@ -63,5 +67,11 @@ public class ModuleConfig extends AbstractModule {
             net.runelite.api.Client client,
             ChatMessageManager chatMessageManager) {
         return new ProspectorUtil(client, chatMessageManager);
+    }
+
+    @Provides
+    @Singleton
+    ProspectorConfig provideConfig(ConfigManager configManager) {
+        return configManager.getConfig(ProspectorConfig.class);
     }
 }
