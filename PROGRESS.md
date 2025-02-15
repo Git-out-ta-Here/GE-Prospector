@@ -26,10 +26,51 @@
 
 ## Next Up (Phase 3)
 🔄 Enhanced UI Features
-- [ ] Add price history charts
-- [ ] Implement interactive tooltips
-- [ ] Add right-click context menus
-- [ ] Create sorting/filtering options
+- [ ] Price History Charts
+  - [ ] Implement JFreeChart integration
+  - [ ] Add real-time price updating
+  - [ ] Create hover tooltips with detailed info
+  - [ ] Add zoom/pan controls
+  - [ ] Implement multiple timeframe views (1h, 24h, 7d)
+
+- [ ] Interactive Tooltips
+  - [ ] Add detailed price breakdowns
+  - [ ] Show volume statistics
+  - [ ] Display profit calculations
+  - [ ] Add quick-action buttons
+
+- [ ] Context Menus
+  - [ ] Add item watching functionality
+  - [ ] Implement quick buy/sell actions
+  - [ ] Add price alert setup
+  - [ ] Create custom note feature
+
+- [ ] Sorting/Filtering
+  - [ ] Add advanced filter combinations
+  - [ ] Implement saved filter presets
+  - [ ] Add custom sorting rules
+  - [ ] Create quick filter shortcuts
+
+## Development Timeline (Phase 3)
+1. Week 1-2: Price History Charts
+   - Core charting implementation
+   - Data integration
+   - UI polish
+
+2. Week 3: Interactive Tooltips
+   - Component design
+   - Data integration
+   - Performance optimization
+
+3. Week 4: Context Menus
+   - Menu structure
+   - Action handlers
+   - UI integration
+
+4. Week 5: Sorting/Filtering
+   - Filter engine
+   - UI controls
+   - Preset system
 
 ## Future Phases
 
