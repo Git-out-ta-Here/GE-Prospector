@@ -4,75 +4,73 @@ A RuneLite plugin for intelligent Grand Exchange flipping with time estimation.
 
 ## Features
 
-- Real-time profit margin tracking
-- Smart flip time estimation
-- Trading volume analysis
-- Price trend visualization
-- Custom price alerts
-- Profit/hour optimization
-- Historical data tracking
+- Real-time profit margin tracking using RuneLite's GE offer events
+- Smart flip time estimation with trading volume analysis
+- Built-in RuneLite overlay system for price tracking
+- Customizable price alerts integrated with RuneLite notifications
+- Historical data analysis with trend visualization
+- Profit/hour calculations and optimization
+- Full RuneLite widget system integration
 
 ## Installation
 
-1. Open RuneLite Plugin Hub
-2. Search for "GE Prospector"
-3. Click Install
-4. Enable the plugin in RuneLite settings
+1. Open RuneLite Settings (⚙️)
+2. Click the Plugin Hub icon (🔌)
+3. Search for "GE Prospector"
+4. Click Install
+5. Enable the plugin in RuneLite settings
 
 ## Quick Start
 
-1. Open Grand Exchange
-2. Click the GE Prospector icon in the sidebar
-3. View current profitable items
+1. Open the Grand Exchange in RuneLite
+2. Click the GE Prospector icon in the sidebar (📊)
+3. View current profitable items with integrated RuneLite overlays
 4. Click on an item to see detailed analysis
-5. Use the time indicators (🟢🟡🟠🔴⚫) to gauge flip speed
-
-## Time Estimation System
-
-The plugin uses advanced algorithms to estimate flip completion times:
-
-- 🟢 Very High Volume (< 5 mins)
-- 🟡 High Volume (5-15 mins)
-- 🟠 Medium Volume (15-30 mins)
-- 🔴 Low Volume (30-60 mins)
-- ⚫ Very Low Volume (> 1 hour)
+5. Use the time indicators for flip speed estimation:
+   - 🟢 Very High Volume (< 5 mins)
+   - 🟡 High Volume (5-15 mins)
+   - 🟠 Medium Volume (15-30 mins)
+   - 🔴 Low Volume (30-60 mins)
+   - ⚫ Very Low Volume (> 1 hour)
 
 ## Configuration
 
 ### Basic Settings
-- Minimum profit margin
-- Price alert thresholds
-- Update frequency
-- Display preferences
+- Minimum profit margin threshold
+- Price alert notifications (uses RuneLite's notification system)
+- Update frequency for price checks
+- Display preferences for overlays
 
 ### Advanced Settings
-- Custom time windows
-- Risk tolerance levels
-- Volume thresholds
-- Alert conditions
+- Custom time windows for analysis
+- Risk tolerance levels for recommendations
+- Volume thresholds for time estimation
+- Alert conditions with RuneLite notifications
 
-## API Usage
+## Integration
 
-The plugin uses the following APIs:
-- OSRS Grand Exchange API
-- RuneLite Item API
-- Wiki Prices API
+The plugin leverages several RuneLite APIs:
+- Client API for game state management
+- ItemManager for item data and sprites
+- ConfigManager for settings
+- OverlayManager for UI elements
+- EventBus for real-time updates
 
-For detailed API documentation, see [OSRS-API-documentation.md](OSRS-API-documentation.md)
+For detailed API documentation, see [TECHNICAL_REQUIREMENTS.md](DOCS/TECHNICAL_REQUIREMENTS.md)
 
 ## Development
 
 See the following guides:
-- [Development Roadmap](DEVELOPMENT.md)
-- [Technical Requirements](TECHNICAL_REQUIREMENTS.md)
-- [Setup Guide](SETUP.md)
+- [Development Roadmap](DOCS/DEVELOPMENT.md)
+- [Technical Requirements](DOCS/TECHNICAL_REQUIREMENTS.md)
+- [Setup Guide](DOCS/SETUP.md)
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
+3. Follow RuneLite plugin guidelines
+4. Test thoroughly
 5. Create a Pull Request
 
 ## License
@@ -82,12 +80,6 @@ This project is licensed under the BSD-2-Clause license - see the [LICENSE](LICE
 ## Support
 
 - Create an issue on GitHub
+- Check RuneLite plugin support forums
 - Join our Discord community
-- Check the FAQ in the wiki
-
-## Acknowledgments
-
-- RuneLite team
-- OSRS Wiki team
-- Community contributors
 
